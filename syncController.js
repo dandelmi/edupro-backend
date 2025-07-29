@@ -382,4 +382,34 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
   }
 });
 
+
+////Para sincronizar usuarios con cambios locales (contraseña u otros campos), necesitas un endpoint separado.
+router.post('/usuarios-sync', async (req, res) => {
+  const usuarios = req.body;
+  const client = await pool.connect();
+
+  try {
+    for (const user of usuarios) {
+      const columnas = Object.keys(user);
+      const valores = Object.values(user);
+      const placeholders = columnas.map((_, idx) => `$${idx + 1}`).join(', ');
+      const updateSet = columnas.map(col => `${col} = EXCLUDED.${col}`).join(', ');
+
+      await client.query(`
+        INSERT INTO usuarios (${columnas.join(', ')})
+        VALUES (${placeholders})
+        ON CONFLICT (id) DO UPDATE SET ${updateSet}
+      `, valores);
+    }
+
+    res.json({ message: 'Usuarios sincronizados correctamente.' });
+  } catch (error) {
+    console.error('[SYNC USUARIOS ERROR]', error.message);
+    res.status(500).json({ message: 'Error al sincronizar usuarios', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+
 module.exports = router;
