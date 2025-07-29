@@ -443,4 +443,27 @@ router.delete('/sync/:tabla/:id', async (req, res) => {
 });
 
 
+
+// Verificar si un usuario existe por teléfono
+router.post('/check-user', async (req, res) => {
+  const { telefono } = req.body;
+  const client = await pool.connect();
+
+  try {
+    const result = await client.query(
+      'SELECT id FROM usuarios WHERE telefono = $1',
+      [telefono]
+    );
+
+    res.json({ exists: result.rows.length > 0 });
+  } catch (error) {
+    console.error('[CHECK-USER ERROR]', error.message);
+    res.status(500).json({ exists: false, message: 'Error al verificar usuario' });
+  } finally {
+    client.release();
+  }
+});
+
+
+
 module.exports = router;
