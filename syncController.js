@@ -279,6 +279,43 @@ router.post('/sync/:tabla', async (req, res) => {
   }
 });
 
+//registro de usuarios
+// ==========================
+// REGISTRO DE USUARIO
+// ==========================
+router.post('/register', async (req, res) => {
+  const { nombre, apellido, correo, telefono, rol, contrasena } = req.body;
+  const client = await pool.connect();
+
+  try {
+    // Verificar si el correo ya existe
+    const existe = await client.query(
+      'SELECT id FROM usuarios WHERE correo = $1',
+      [correo]
+    );
+
+    if (existe.rows.length > 0) {
+      return res.status(400).json({ message: 'El correo ya está registrado.' });
+    }
+
+    // Crear usuario en PostgreSQL
+    const result = await client.query(
+      `INSERT INTO usuarios (nombre, apellido, correo, telefono, rol, contrasena)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, nombre, apellido, rol, correo`,
+      [nombre, apellido, correo, telefono, rol, contrasena]
+    );
+
+    res.json({ message: 'Usuario registrado correctamente', usuario: result.rows[0] });
+  } catch (error) {
+    console.error('[REGISTER ERROR]', error.message);
+    res.status(500).json({ message: 'Error al registrar usuario', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+
 // ==========================
 // RUTA GET (Descarga de datos con filtro por usuario)
 // ==========================
