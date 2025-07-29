@@ -242,9 +242,22 @@ router.post('/login', async (req, res) => {
 // ==========================
 // RUTA POST (Subida de datos)
 // ==========================
+
 router.post('/sync/:tabla', async (req, res) => {
   const tabla = req.params.tabla;
   const datos = req.body;
+
+  // ✅ Validación de tablas permitidas
+  const tablasPermitidas = [
+    'usuarios', 'estudiantes', 'cursos', 'asignaturas',
+    'planificaciones', 'asistencia', 'calificacion_estandar',
+    'calificacion_competencias', 'registro_asistencia_detallado',
+    'pagos_asignaturas'
+  ];
+
+  if (!tablasPermitidas.includes(tabla)) {
+    return res.status(400).json({ message: 'Tabla no permitida.' });
+  }
 
   if (!Array.isArray(datos) || datos.length === 0) {
     return res.status(400).json({ message: 'No hay datos para sincronizar.' });
@@ -278,6 +291,7 @@ router.post('/sync/:tabla', async (req, res) => {
     client.release();
   }
 });
+
 
 //registro de usuarios
 // ==========================
