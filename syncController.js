@@ -377,15 +377,51 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
     let params = [];
 
     if (usuarioId) {
-      if (['cursos', 'planificaciones', 'calificacion_estandar', 'calificacion_competencias'].includes(tabla)) {
-        query += ` WHERE profesor_id = $1`;
-        params.push(usuarioId);
-      } else if (tabla === 'usuarios') {
-        query += ` WHERE id = $1`;
-        params.push(usuarioId);
-      } else if (['estudiantes', 'asistencia', 'registro_asistencia_detallado'].includes(tabla)) {
-        query += ` WHERE escuela_id = (SELECT escuela_id FROM usuarios WHERE id = $1)`;
-        params.push(usuarioId);
+      switch (tabla) {
+        case 'usuarios':
+          query += ` WHERE id = $1`;
+          params.push(usuarioId);
+          break;
+
+        case 'cursos':
+          query += ` WHERE profesor_id = $1`;
+          params.push(usuarioId);
+          break;
+
+        case 'asignaturas':
+          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          params.push(usuarioId);
+          break;
+
+        case 'planificaciones':
+          query += ` WHERE profesor_id = $1`;
+          params.push(usuarioId);
+          break;
+
+        case 'calificacion_estandar':
+        case 'calificacion_competencias':
+          query += ` WHERE profesor_id = $1`;
+          params.push(usuarioId);
+          break;
+
+        case 'estudiantes':
+          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          params.push(usuarioId);
+          break;
+
+        case 'asistencia':
+        case 'registro_asistencia_detallado':
+          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          params.push(usuarioId);
+          break;
+
+        case 'pagos_asignaturas':
+          query += ` WHERE profesor_id = $1`;
+          params.push(usuarioId);
+          break;
+
+        default:
+          break;
       }
     }
 
@@ -398,6 +434,7 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
     client.release();
   }
 });
+
 
 
 
