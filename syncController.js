@@ -389,7 +389,9 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
           break;
 
         case 'asignaturas':
-          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          query += ` WHERE curso_id IN (
+            SELECT id FROM cursos WHERE profesor_id = $1
+          )`;
           params.push(usuarioId);
           break;
 
@@ -405,13 +407,33 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
           break;
 
         case 'estudiantes':
-          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          query += ` WHERE id IN (
+            SELECT e.id 
+            FROM estudiantes e
+            JOIN estudiante_asignatura ea ON ea.estudiante_id = e.id
+            JOIN asignaturas a ON a.id = ea.asignatura_id
+            JOIN cursos c ON c.id = a.curso_id
+            WHERE c.profesor_id = $1
+          )`;
           params.push(usuarioId);
           break;
 
         case 'asistencia':
+          query += ` WHERE estudiante_id IN (
+            SELECT e.id 
+            FROM estudiantes e
+            JOIN estudiante_asignatura ea ON ea.estudiante_id = e.id
+            JOIN asignaturas a ON a.id = ea.asignatura_id
+            JOIN cursos c ON c.id = a.curso_id
+            WHERE c.profesor_id = $1
+          )`;
+          params.push(usuarioId);
+          break;
+
         case 'registro_asistencia_detallado':
-          query += ` WHERE curso_id IN (SELECT id FROM cursos WHERE profesor_id = $1)`;
+          query += ` WHERE curso_id IN (
+            SELECT id FROM cursos WHERE profesor_id = $1
+          )`;
           params.push(usuarioId);
           break;
 
@@ -421,6 +443,7 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
           break;
 
         default:
+          // Si no hay filtro, se descargan todos los registros
           break;
       }
     }
