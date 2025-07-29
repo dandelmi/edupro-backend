@@ -412,4 +412,21 @@ router.post('/usuarios-sync', async (req, res) => {
 });
 
 
+//Eliminar datos
+router.delete('/sync/:tabla/:id', async (req, res) => {
+  const { tabla, id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    await client.query(`DELETE FROM ${tabla} WHERE id = $1`, [id]);
+    res.json({ message: `${tabla} eliminado correctamente.` });
+  } catch (error) {
+    console.error('[DELETE ERROR]', error.message);
+    res.status(500).json({ message: 'Error al eliminar', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+
 module.exports = router;
