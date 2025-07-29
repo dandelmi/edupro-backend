@@ -315,6 +315,38 @@ router.post('/register', async (req, res) => {
   }
 });
 
+//recuperar cuenta
+router.post('/recover-password', async (req, res) => {
+  const { telefono, nuevaContrasena, respuesta1, respuesta2, respuesta3 } = req.body;
+  const client = await pool.connect();
+
+  try {
+    const usuario = await client.query(
+      `SELECT * FROM usuarios 
+       WHERE telefono = $1 
+       AND respuesta1 = $2 
+       AND respuesta2 = $3 
+       AND respuesta3 = $4`,
+      [telefono, respuesta1, respuesta2, respuesta3]
+    );
+
+    if (usuario.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Datos de seguridad incorrectos' });
+    }
+
+    await client.query(
+      `UPDATE usuarios SET contrasena = $1 WHERE telefono = $2`,
+      [nuevaContrasena, telefono]
+    );
+
+    res.json({ success: true, message: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('[RECOVER ERROR]', error.message);
+    res.status(500).json({ success: false, message: 'Error en la recuperación', error: error.message });
+  } finally {
+    client.release();
+  }
+});
 
 // ==========================
 // RUTA GET (Descarga de datos con filtro por usuario)
