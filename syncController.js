@@ -214,4 +214,74 @@ async function createTablesIfNotExist() {
 // RUTA POST (Subida de datos)
 // ==========================
 router.post('/sync/:tabla', async (req, res) => {
-  const tabla = req.
+  const tabla = req.params.tabla;
+  const datos = req.body;
+
+  if (!Array.isArray(datos) || datos.length === 0) {
+    return res.status(400).json({ message: 'No hay datos para sincronizar.' });
+  }
+
+  const client = await pool.connect();
+  try {
+    await createTablesIfNotExist();
+
+    for (const dato of datos) {
+      const columnas = Object.keys(dato);
+      const valores = Object.values(dato);
+      const placeholders = columnas.map((_, idx) => `$${idx + 1}`).join(', ');
+
+      const updateSet = columnas.map(col => `${col} = EXCLUDED.${col}`).join(', ');
+
+      const sql = `
+        INSERT INTO ${tabla} (${columnas.join(', ')})
+        VALUES (${placeholders})
+        ON CONFLICT (id) DO UPDATE SET ${updateSet}
+      `;
+
+      await client.query(sql, valores);
+    }
+
+    res.json({ message: `Sincronización completada para ${tabla}.` });
+  } catch (error) {
+    console.error('[SYNC ERROR]', error.message);
+    res.status(500).json({ message: 'Error al sincronizar datos.', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// ==========================
+// RUTA GET (Descarga de datos con filtro por usuario)
+// ==========================
+router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
+  const tabla = req.params.tabla;
+  const usuarioId = req.params.usuarioId;
+  const client = await pool.connect();
+
+  try {
+    await createTablesIfNotExist();
+
+    let query = `SELECT * FROM ${tabla}`;
+    let params = [];
+
+    if (usuarioId) {
+      if (['cursos', 'planificaciones', 'calificacion_estandar', 'calificacion_competencias'].includes(tabla)) {
+        query += ` WHERE profesor_id = $1`;
+        params.push(usuarioId);
+      } else if (tabla === 'usuarios') {
+        query += ` WHERE id = $1`;
+        params.push(usuarioId);
+      }
+    }
+
+    const result = await client.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error(`[GET ERROR] ${tabla}:`, error.message);
+    res.status(500).json({ message: 'Error al obtener datos.', error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+module.exports = router;
