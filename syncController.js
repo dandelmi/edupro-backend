@@ -383,6 +383,9 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
       } else if (tabla === 'usuarios') {
         query += ` WHERE id = $1`;
         params.push(usuarioId);
+      } else if (['estudiantes', 'asistencia', 'registro_asistencia_detallado'].includes(tabla)) {
+        query += ` WHERE escuela_id = (SELECT escuela_id FROM usuarios WHERE id = $1)`;
+        params.push(usuarioId);
       }
     }
 
@@ -395,6 +398,7 @@ router.get('/sync/:tabla/:usuarioId?', async (req, res) => {
     client.release();
   }
 });
+
 
 
 ////Para sincronizar usuarios con cambios locales (contraseña u otros campos), necesitas un endpoint separado.
