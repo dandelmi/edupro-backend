@@ -191,6 +191,15 @@ async function createTablesIfNotExist() {
       );
     `);
 
+
+     await client.query(`
+    CREATE TABLE estudiante_asignatura (
+    id SERIAL PRIMARY KEY,
+    estudiante_id INTEGER REFERENCES estudiantes(id) ON DELETE CASCADE,
+    asignatura_id INTEGER REFERENCES asignaturas(id) ON DELETE CASCADE
+);
+  `);
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS escuelas (
         id SERIAL PRIMARY KEY,
