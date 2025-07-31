@@ -13,6 +13,8 @@ const pool = new Pool({
 async function createTablesIfNotExist() {
   const client = await pool.connect();
   try {
+    
+    // USUARIOS
     await client.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id SERIAL PRIMARY KEY,
@@ -31,8 +33,12 @@ async function createTablesIfNotExist() {
         intentos_recuperacion INTEGER DEFAULT 0,
         escuela_id INTEGER
       );
+      ALTER TABLE usuarios 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // ESTUDIANTES
     await client.query(`
       CREATE TABLE IF NOT EXISTS estudiantes (
         id SERIAL PRIMARY KEY,
@@ -40,8 +46,12 @@ async function createTablesIfNotExist() {
         apellido TEXT NOT NULL,
         escuela_id INTEGER
       );
+      ALTER TABLE estudiantes 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // CURSOS
     await client.query(`
       CREATE TABLE IF NOT EXISTS cursos (
         id SERIAL PRIMARY KEY,
@@ -50,16 +60,12 @@ async function createTablesIfNotExist() {
         profesor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
         escuela_id INTEGER
       );
+      ALTER TABLE cursos 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
-
-      await client.query(`
-  CREATE TABLE IF NOT EXISTS estudiante_asignatura (
-    id SERIAL PRIMARY KEY,
-    estudiante_id INTEGER REFERENCES estudiantes(id) ON DELETE CASCADE,
-    asignatura_id INTEGER REFERENCES asignaturas(id) ON DELETE CASCADE
-  );
-`);
+    // ASIGNATURAS
     await client.query(`
       CREATE TABLE IF NOT EXISTS asignaturas (
         id SERIAL PRIMARY KEY,
@@ -68,8 +74,12 @@ async function createTablesIfNotExist() {
         color TEXT,
         escuela_id INTEGER
       );
+      ALTER TABLE asignaturas 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // ESTUDIANTE-ASIGNATURA
     await client.query(`
       CREATE TABLE IF NOT EXISTS estudiante_asignatura (
         id SERIAL PRIMARY KEY,
@@ -78,6 +88,7 @@ async function createTablesIfNotExist() {
       );
     `);
 
+    // PLANIFICACIONES
     await client.query(`
       CREATE TABLE IF NOT EXISTS planificaciones (
         id SERIAL PRIMARY KEY,
@@ -90,8 +101,12 @@ async function createTablesIfNotExist() {
         fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         escuela_id INTEGER
       );
+      ALTER TABLE planificaciones 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // ASISTENCIA
     await client.query(`
       CREATE TABLE IF NOT EXISTS asistencia (
         id SERIAL PRIMARY KEY,
@@ -103,8 +118,12 @@ async function createTablesIfNotExist() {
         escuela_id INTEGER,
         UNIQUE (estudiante_id, asignatura_id, fecha)
       );
+      ALTER TABLE asistencia 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // CALIFICACIÓN ESTÁNDAR
     await client.query(`
       CREATE TABLE IF NOT EXISTS calificacion_estandar (
         id SERIAL PRIMARY KEY,
@@ -124,8 +143,12 @@ async function createTablesIfNotExist() {
         escuela_id INTEGER,
         UNIQUE(estudiante_id, asignatura_id, periodo, ano_escolar)
       );
+      ALTER TABLE calificacion_estandar 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // CALIFICACIÓN COMPETENCIAS
     await client.query(`
       CREATE TABLE IF NOT EXISTS calificacion_competencias (
         id SERIAL PRIMARY KEY,
@@ -146,13 +169,18 @@ async function createTablesIfNotExist() {
         escuela_id INTEGER,
         UNIQUE(estudiante_id, asignatura_id, curso_id, periodo, ano_escolar)
       );
+      ALTER TABLE calificacion_competencias 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // REGISTRO ASISTENCIA DETALLADO
     await client.query(`
       CREATE TABLE IF NOT EXISTS registro_asistencia_detallado (
         id SERIAL PRIMARY KEY,
         curso_id INTEGER NOT NULL REFERENCES cursos(id) ON DELETE CASCADE,
         estudiante_id INTEGER NOT NULL REFERENCES estudiantes(id) ON DELETE CASCADE,
+        profesor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
         nombre_estudiante TEXT,
         apellido_estudiante TEXT,
         estado TEXT NOT NULL,
@@ -163,8 +191,12 @@ async function createTablesIfNotExist() {
         ano_escolar TEXT NOT NULL,
         escuela_id INTEGER
       );
+      ALTER TABLE registro_asistencia_detallado 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // PAGOS ASIGNATURAS
     await client.query(`
       CREATE TABLE IF NOT EXISTS pagos_asignaturas (
         id SERIAL PRIMARY KEY,
@@ -174,8 +206,12 @@ async function createTablesIfNotExist() {
         fecha_pago TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         escuela_id INTEGER
       );
+      ALTER TABLE pagos_asignaturas 
+        ADD COLUMN IF NOT EXISTS last_modified TIMESTAMP DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
     `);
 
+    // MINISTERIO
     await client.query(`
       CREATE TABLE IF NOT EXISTS ministerio (
         id SERIAL PRIMARY KEY,
@@ -185,6 +221,7 @@ async function createTablesIfNotExist() {
       );
     `);
 
+    // REGIONALES
     await client.query(`
       CREATE TABLE IF NOT EXISTS regionales (
         id SERIAL PRIMARY KEY,
@@ -196,6 +233,7 @@ async function createTablesIfNotExist() {
       );
     `);
 
+    // DISTRITOS
     await client.query(`
       CREATE TABLE IF NOT EXISTS distritos (
         id SERIAL PRIMARY KEY,
@@ -207,6 +245,7 @@ async function createTablesIfNotExist() {
       );
     `);
 
+    // ESCUELAS
     await client.query(`
       CREATE TABLE IF NOT EXISTS escuelas (
         id SERIAL PRIMARY KEY,
@@ -219,7 +258,6 @@ async function createTablesIfNotExist() {
         telefono_contacto TEXT
       );
     `);
-
     console.log('[Render] ✅ Tablas verificadas/creadas correctamente.');
   } finally {
     client.release();
