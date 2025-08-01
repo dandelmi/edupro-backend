@@ -272,10 +272,10 @@ router.post('/login', async (req, res) => {
   const client = await pool.connect();
 
   try {
-    const result = await client.query(
-      'SELECT id, nombre, apellido, rol, correo FROM usuarios WHERE correo = $1 AND contrasena = $2',
-      [correo, contrasena]
-    );
+  const result = await client.query(
+  'SELECT id AS profesor_id, nombre, apellido, rol, correo FROM usuarios WHERE correo = $1 AND contrasena = $2',
+  [correo, contrasena]
+);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Credenciales incorrectas' });
