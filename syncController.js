@@ -506,11 +506,16 @@ router.post('/usuarios-sync', async (req, res) => {
 // CHECK-USER
 // ==========================
 router.post('/check-user', async (req, res) => {
-  const { telefono } = req.body;
+  const { correo, telefono } = req.body;
   const client = await pool.connect();
 
   try {
-    const result = await client.query('SELECT id FROM usuarios WHERE telefono = $1', [telefono]);
+    const result = await client.query(
+      `SELECT id FROM usuarios 
+       WHERE correo = $1 OR telefono = $2 
+       LIMIT 1`,
+      [correo, telefono]
+    );
     res.json({ exists: result.rows.length > 0 });
   } catch (error) {
     console.error('[CHECK-USER ERROR]', error.message);
@@ -519,5 +524,7 @@ router.post('/check-user', async (req, res) => {
     client.release();
   }
 });
+
+
 
 module.exports = router;
